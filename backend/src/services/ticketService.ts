@@ -36,8 +36,10 @@ function parseId(value: string): number {
 
 function parseFilters(query: Record<string, unknown>, requireSearch: boolean): TicketSearchFilters {
   const searchTerm = queryString(query.q, 'q');
-  if (requireSearch && !searchTerm) {
-    throw new HttpError(400, 'Le paramètre q est obligatoire.');
+  const prefix = queryString(query.prefix, 'prefix')?.toUpperCase();
+
+  if (requireSearch && !searchTerm && !prefix) {
+    throw new HttpError(400, 'Le paramètre q ou prefix est obligatoire.');
   }
 
   const requestedStatus = queryString(query.status, 'status')?.toUpperCase();
@@ -45,7 +47,6 @@ function parseFilters(query: Record<string, unknown>, requireSearch: boolean): T
     throw new HttpError(400, 'Le statut doit être PENDING ou VALIDATED.');
   }
 
-  const prefix = queryString(query.prefix, 'prefix')?.toUpperCase();
   if (prefix && !/^[A-Z0-9][A-Z0-9_-]{0,19}$/.test(prefix)) {
     throw new HttpError(400, 'Le préfixe est invalide.');
   }
@@ -100,4 +101,22 @@ async function validate(idValue: string) {
   return ticket;
 }
 
-export const ticketService = { search, findById, validate };
+async function cancelValidation(idValue: string) {
+  const id = parseId(idValue);
+  const cancelled = await ticketRepository.cancelValidation(id);
+  if (!cancelled) {
+    const ticket = await ticketRepository.findById(id);
+    if (!ticket) {
+      throw new HttpError(404, 'Billet introuvable.');
+    }
+    throw new HttpError(409, 'Ce billet n’est pas validé.');
+  }
+
+  const ticket = await ticketRepository.findById(id);
+  if (!ticket) {
+    throw new HttpError(404, 'Billet introuvable.');
+  }
+  return ticket;
+}
+
+export const ticketService = { search, findById, validate, cancelValidation };

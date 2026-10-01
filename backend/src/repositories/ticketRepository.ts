@@ -111,4 +111,12 @@ async function validatePending(id: number): Promise<boolean> {
   return result.affectedRows === 1;
 }
 
-export const ticketRepository = { search, findById, validatePending };
+async function cancelValidation(id: number): Promise<boolean> {
+  const [result] = await database.execute<ResultSetHeader>(
+    "UPDATE tickets SET status = 'PENDING', validated_at = NULL, validated_by = NULL WHERE id = ? AND status = 'VALIDATED'",
+    [id],
+  );
+  return result.affectedRows === 1;
+}
+
+export const ticketRepository = { search, findById, validatePending, cancelValidation };

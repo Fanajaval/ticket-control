@@ -29,3 +29,8 @@ export async function validateTicket(request: Request, response: Response): Prom
   const ticket = await ticketService.validate(getTicketId(request));
   response.status(200).json({ success: true, message: 'Billet validé avec succès.', data: ticket });
 }
+
+export async function cancelTicketValidation(request: Request, response: Response): Promise<void> {
+  const ticket = await ticketService.cancelValidation(getTicketId(request));
+  response.status(200).json({ success: true, message: 'Validation annulée avec succès.', data: ticket });
+}
